@@ -1,17 +1,21 @@
+import { lazy } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
 import HubPage from './pages/HubPage'
 import PrivacyPage from './pages/PrivacyPage'
 import NotFound from './pages/NotFound'
-import MergeTool from './tools/MergeTool'
-import SplitTool from './tools/SplitTool'
-import OrganizeTool from './tools/OrganizeTool'
-import RotateTool from './tools/RotateTool'
-import CompressTool from './tools/CompressTool'
-import JpgToPdfTool from './tools/JpgToPdfTool'
-import PdfToJpgTool from './tools/PdfToJpgTool'
-import WatermarkTool from './tools/WatermarkTool'
-import PageNumbersTool from './tools/PageNumbersTool'
+
+// Tool pages are code-split so the first visit only downloads the hub;
+// pdf-lib and friends arrive on demand when a tool is opened.
+const MergeTool = lazy(() => import('./tools/MergeTool'))
+const SplitTool = lazy(() => import('./tools/SplitTool'))
+const OrganizeTool = lazy(() => import('./tools/OrganizeTool'))
+const RotateTool = lazy(() => import('./tools/RotateTool'))
+const CompressTool = lazy(() => import('./tools/CompressTool'))
+const JpgToPdfTool = lazy(() => import('./tools/JpgToPdfTool'))
+const PdfToJpgTool = lazy(() => import('./tools/PdfToJpgTool'))
+const WatermarkTool = lazy(() => import('./tools/WatermarkTool'))
+const PageNumbersTool = lazy(() => import('./tools/PageNumbersTool'))
 
 export default function App() {
   return (

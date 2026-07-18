@@ -17,7 +17,31 @@
     <meta property="og:type" content="website" />
   </head>
   <body class="bg-slate-50 text-slate-900 antialiased">
-    <div id="root"></div>
+    <div id="root">
+      <!-- instant splash: replaced by React on first render -->
+      <div
+        style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; font-family: system-ui, sans-serif; background: #f8fafc"
+      >
+        <svg width="56" height="56" viewBox="0 0 64 64" aria-hidden="true">
+          <rect width="64" height="64" rx="14" fill="#059669" />
+          <path d="M22 14h14l8 8v28H22z" fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round" />
+          <path d="M36 14v8h8" fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round" />
+          <path d="M27 34h10M27 40h10" stroke="#fff" stroke-width="3" stroke-linecap="round" />
+        </svg>
+        <div style="font-size: 20px; font-weight: 700; color: #0f172a">PDF<span style="color: #059669">Craft</span></div>
+        <div
+          style="width: 26px; height: 26px; border: 3px solid #e2e8f0; border-top-color: #059669; border-radius: 50%; animation: pdfcraft-spin 0.8s linear infinite"
+        ></div>
+        <div style="font-size: 13px; color: #64748b">Loading… your files never leave your device</div>
+      </div>
+    </div>
+    <style>
+      @keyframes pdfcraft-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

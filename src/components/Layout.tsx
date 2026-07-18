@@ -1,7 +1,15 @@
-import { useEffect } from 'react'
+import { Suspense, useEffect } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { Github } from 'lucide-react'
 import { CATEGORY_LABEL, TOOLS, type ToolCategory } from '../toolRegistry'
+
+function PageLoader() {
+  return (
+    <div className="flex justify-center py-32">
+      <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-slate-200 border-t-emerald-600" />
+    </div>
+  )
+}
 
 function Logo() {
   return (
@@ -37,7 +45,9 @@ export default function Layout() {
       </header>
 
       <main className="flex-1">
-        <Outlet />
+        <Suspense fallback={<PageLoader />}>
+          <Outlet />
+        </Suspense>
       </main>
 
       <footer className="mt-16 border-t border-slate-200 bg-white">
