@@ -1,0 +1,5 @@
+node_modules/
+dist/
+public/fixtures/
+*.local
+.DS_Store
