@@ -1,4 +1,5 @@
 // Phone-photo → clean page: perspective correction and paper-whitening filters, all on canvas.
+import { DETECT_SIZE, findPageQuad } from './scanDetect'
 
 export interface Pt {
   x: number
@@ -27,6 +28,25 @@ export async function decodeImage(file: File): Promise<ImageBitmap> {
     return await createImageBitmap(file)
   } catch {
     throw new Error(`Could not read "${file.name}" — is it a valid image?`)
+  }
+}
+
+/** The page's corners in a photo, or null when no clear page outline is visible. */
+export function detectQuad(bitmap: ImageBitmap): Quad | null {
+  try {
+    const s = Math.min(1, DETECT_SIZE / Math.max(bitmap.width, bitmap.height))
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.max(1, Math.round(bitmap.width * s))
+    canvas.height = Math.max(1, Math.round(bitmap.height * s))
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })
+    if (!ctx) return null
+    ctx.imageSmoothingQuality = 'high'
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+    const img = ctx.getImageData(0, 0, canvas.width, canvas.height)
+    canvas.width = canvas.height = 0
+    return findPageQuad(img)
+  } catch {
+    return null // detection is a convenience; the corners can always be placed by hand
   }
 }
 

@@ -10,7 +10,7 @@ Sister project: [ResumeCraft](https://gsrkas101.github.io/resumecraft/) — free
 
 - **Organize:** Merge, Split (ranges / every N pages), Extract pages, Remove pages, Organize (drag-reorder, rotate, delete)
 - **Optimize:** Compress (lossless + raster presets with honest before/after sizes)
-- **Convert:** JPG/PNG/WebP → PDF, PDF → JPG/PNG, Scan to PDF (camera/photos → straightened, cleaned-up pages), OCR (searchable text layer, English + Hindi)
+- **Convert:** JPG/PNG/WebP → PDF, PDF → JPG/PNG, Scan to PDF (camera/photos → automatic page-edge detection, straightened and cleaned-up pages), OCR (searchable text layer, English + Hindi)
 - **Edit:** Rotate, Text/Image watermark, Page numbers, Sign (draw / type / upload, plus text and dates), Crop (drag a box or trim white margins)
 - **Security:** Protect (AES-256 password, optional print/copy/edit restrictions), Unlock (with the password you know)
 
@@ -18,7 +18,7 @@ Everything is processed client-side with [pdf-lib](https://pdf-lib.js.org/) (man
 
 ## Roadmap
 
-- **Phase 2:** route prerendering for SEO, PWA offline, Hindi UI, automatic page-edge detection for Scan, more OCR languages
+- **Phase 2:** route prerendering for SEO, PWA offline, Hindi UI, more OCR languages
 - **Phase 3:** Redact, Compare, Repair, HTML → PDF, basic PDF ↔ Word/Excel (honestly labeled as approximate)
 
 Not planned: high-fidelity PDF ↔ Office conversion and validated PDF/A — those need servers (that's how the paid sites do it), and PDFCraft is server-free by design.

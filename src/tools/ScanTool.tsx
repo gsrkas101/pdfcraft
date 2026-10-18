@@ -9,7 +9,7 @@ import { ResultCard, type ResultFile } from '../components/ResultCard'
 import { CameraCapture } from '../components/CameraCapture'
 import { FILTERS, ScanEditor } from '../components/ScanEditor'
 import { OCR_LANGS, OcrProgressBar } from '../components/OcrOptions'
-import { decodeImage, FULL_QUAD, processScan, type ScanEdit, type ScanFilter } from '../lib/browser/scan'
+import { decodeImage, detectQuad, FULL_QUAD, processScan, type ScanEdit, type ScanFilter } from '../lib/browser/scan'
 import { ocrPdf, type OcrLang, type OcrProgress } from '../lib/browser/ocr'
 import { imagesToPdf } from '../lib/pdf/imagesToPdf'
 import { friendlyError } from '../lib/pdf/errors'
@@ -95,7 +95,7 @@ export default function ScanTool() {
           name: file.name,
           bitmap,
           srcUrl: URL.createObjectURL(file),
-          edit: { quad: FULL_QUAD, turns: 0, filter },
+          edit: { quad: detectQuad(bitmap) ?? FULL_QUAD, turns: 0, filter },
           out: null,
         }
         pagesRef.current = [...pagesRef.current, page]
@@ -283,6 +283,7 @@ export default function ScanTool() {
         <ScanEditor
           src={editPage.srcUrl}
           initial={editPage.edit}
+          detect={() => detectQuad(editPage.bitmap)}
           onClose={() => setEditing(null)}
           onApply={(edit) => {
             setEditing(null)

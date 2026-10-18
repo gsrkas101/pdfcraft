@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import { Maximize, RotateCcw, RotateCw } from 'lucide-react'
+import { Maximize, RotateCcw, RotateCw, WandSparkles } from 'lucide-react'
 import { Field, Segmented } from './controls'
 import { FULL_QUAD, type Quad, type ScanEdit, type ScanFilter } from '../lib/browser/scan'
 
@@ -16,15 +16,19 @@ const clamp01 = (v: number) => Math.min(1, Math.max(0, v))
 export function ScanEditor({
   src,
   initial,
+  detect,
   onApply,
   onClose,
 }: {
   src: string
   initial: ScanEdit
+  /** find the page's corners automatically (null: none found) */
+  detect: () => Quad | null
   onApply: (e: ScanEdit) => void
   onClose: () => void
 }) {
   const [quad, setQuad] = useState<Quad>(initial.quad)
+  const [notFound, setNotFound] = useState(false)
   const [turns, setTurns] = useState(initial.turns)
   const [filter, setFilter] = useState(initial.filter)
   const boxRef = useRef<HTMLDivElement>(null)
@@ -63,7 +67,13 @@ export function ScanEditor({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-3">
       <div role="dialog" aria-label="Adjust page" className="flex max-h-full w-full max-w-3xl flex-col rounded-2xl bg-white p-4 shadow-xl sm:p-6">
-        <p className="mb-3 text-sm text-slate-600">Drag the corners onto the page edges.</p>
+        {notFound ? (
+          <p className="mb-3 text-sm text-amber-700" role="status">
+            Couldn't find the page edges automatically — drag the corners onto them.
+          </p>
+        ) : (
+          <p className="mb-3 text-sm text-slate-600">Drag the corners onto the page edges.</p>
+        )}
         <div className="flex min-h-0 flex-1 items-start justify-center">
           <div ref={boxRef} className="relative touch-none select-none">
             <img src={src} alt="Page photo" draggable={false} className="block max-h-[58vh] max-w-full" />
@@ -98,7 +108,26 @@ export function ScanEditor({
             <button type="button" className="btn-secondary px-3" onClick={() => setTurns(((turns + 1) % 4) as ScanEdit['turns'])} aria-label="Rotate right">
               <RotateCw className="h-4 w-4" />
             </button>
-            <button type="button" className="btn-secondary" onClick={() => setQuad(FULL_QUAD)}>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => {
+                const found = detect()
+                if (found) setQuad(found)
+                setNotFound(!found)
+              }}
+              data-testid="auto-detect"
+            >
+              <WandSparkles className="h-4 w-4" /> Auto-detect
+            </button>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => {
+                setQuad(FULL_QUAD)
+                setNotFound(false)
+              }}
+            >
               <Maximize className="h-4 w-4" /> Whole photo
             </button>
           </div>
