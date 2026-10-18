@@ -3,12 +3,8 @@ import type { PDFPageProxy } from 'pdfjs-dist'
 import { openPdfJs } from './pdfjs'
 import type { ProgressFn } from '../pdf/load'
 
-async function renderPageToBlob(
-  page: PDFPageProxy,
-  scale: number,
-  type: 'image/jpeg' | 'image/png',
-  quality?: number,
-): Promise<{ blob: Blob; widthPt: number; heightPt: number }> {
+/** Render a page (rotation applied) onto a fresh canvas with a white background. */
+export async function renderPageToCanvas(page: PDFPageProxy, scale: number): Promise<HTMLCanvasElement> {
   const viewport = page.getViewport({ scale })
   const canvas = document.createElement('canvas')
   canvas.width = Math.ceil(viewport.width)
@@ -19,6 +15,16 @@ async function renderPageToBlob(
   ctx.fillStyle = '#ffffff'
   ctx.fillRect(0, 0, canvas.width, canvas.height)
   await page.render({ canvas, canvasContext: ctx, viewport }).promise
+  return canvas
+}
+
+async function renderPageToBlob(
+  page: PDFPageProxy,
+  scale: number,
+  type: 'image/jpeg' | 'image/png',
+  quality?: number,
+): Promise<{ blob: Blob; widthPt: number; heightPt: number }> {
+  const canvas = await renderPageToCanvas(page, scale)
   const blob = await new Promise<Blob>((resolve, reject) =>
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Could not encode the page image.'))), type, quality),
   )

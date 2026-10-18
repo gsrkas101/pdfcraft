@@ -21,6 +21,11 @@ export default function PrivacyPage() {
           generated in your browser's memory and saved straight to your device.
         </p>
         <p>
+          <strong className="text-slate-900">OCR runs here too.</strong> The OCR and Scan tools download the
+          recognition engine and language data from this same website the first time you use them, then cache it.
+          Your pages are recognised on your device; only the engine travels, never your documents.
+        </p>
+        <p>
           <strong className="text-slate-900">Open source.</strong> Don't take our word for it — the entire source code
           is public on GitHub, and you can verify with your browser's network tab that no file data ever leaves the
           page. You can even use the tools with your internet disconnected.

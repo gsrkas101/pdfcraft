@@ -3,7 +3,7 @@ export class PdfError extends Error {}
 
 export class EncryptedPdfError extends PdfError {
   constructor() {
-    super('This PDF is password-protected. Remove the password first — an Unlock tool is coming to PDFCraft soon.')
+    super('This PDF is password-protected. Remove the password first with the Unlock PDF tool, then try again.')
   }
 }
 

@@ -2,7 +2,7 @@
 // Usage: tsx scripts/test-engines.ts <fixtures-dir>
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { PDFDocument } from 'pdf-lib'
+import { PDFDocument, degrees } from 'pdf-lib'
 import { mergePdfs } from '../src/lib/pdf/merge'
 import { chunkEveryN, extractPages, parsePageRanges, removePages, splitPdf } from '../src/lib/pdf/split'
 import { rotatePages } from '../src/lib/pdf/rotate'
@@ -11,6 +11,22 @@ import { addTextWatermark } from '../src/lib/pdf/watermark'
 import { addPageNumbers } from '../src/lib/pdf/pageNumbers'
 import { imagesToPdf } from '../src/lib/pdf/imagesToPdf'
 import { compressLossless } from '../src/lib/pdf/compressLossless'
+import { displayRectToPdfBox, displayToPdf, uprightPlacement, visibleBox } from '../src/lib/pdf/geometry'
+import { cropPdf } from '../src/lib/pdf/crop'
+import { stampImages } from '../src/lib/pdf/stamp'
+import { inspectLock, protectPdf, unlockPdf } from '../src/lib/pdf/security'
+import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs'
+import { createRequire } from 'node:module'
+
+// qpdf (WASM) is a dev-only reference implementation for encryption interop checks
+interface Qpdf {
+  callMain(args: string[]): number
+  FS: { writeFile(path: string, data: Uint8Array): void; readFile(path: string): Uint8Array }
+}
+const require = createRequire(import.meta.url)
+const createQpdf = require('@neslinesli93/qpdf-wasm') as (o: { locateFile: () => string }) => Promise<Qpdf>
+const QPDF_WASM = require.resolve('@neslinesli93/qpdf-wasm/dist/qpdf.wasm')
+const loadQpdf = () => createQpdf({ locateFile: () => QPDF_WASM })
 
 const dir = process.argv[2]
 if (!dir) throw new Error('usage: tsx scripts/test-engines.ts <fixtures-dir>')
@@ -187,6 +203,190 @@ await check('imagesToPdf jpg+png → 2 A4 pages', async () => {
 await check('lossless compress keeps pages and stays valid', async () => {
   const out = await compressLossless(A)
   eq(await pages(out), 5, 'page count')
+})
+
+async function throwsWith(fn: () => Promise<unknown>, needle: string) {
+  let msg = ''
+  try {
+    await fn()
+  } catch (e) {
+    msg = (e as Error).message
+  }
+  if (!msg.includes(needle)) throw new Error(`expected an error containing "${needle}", got "${msg}"`)
+}
+
+const round = (b: { x: number; y: number; width: number; height: number }) =>
+  [b.x, b.y, b.width, b.height].map((n) => Math.round(n))
+
+await check('displayToPdf: display top-left per rotation', () => {
+  const box = { x: 0, y: 0, width: 600, height: 800 }
+  eq(displayToPdf(box, 0, 0, 0), { x: 0, y: 800 }, 'rot 0')
+  eq(displayToPdf(box, 90, 0, 0), { x: 0, y: 0 }, 'rot 90')
+  eq(displayToPdf(box, 180, 0, 0), { x: 600, y: 0 }, 'rot 180')
+  eq(displayToPdf(box, 270, 0, 0), { x: 600, y: 800 }, 'rot 270')
+  eq(displayToPdf(box, -90, 0, 0), { x: 600, y: 800 }, 'rot -90 == 270')
+})
+
+await check('displayRectToPdfBox: left half of a 90°-rotated page is the PDF bottom half', () => {
+  const box = { x: 10, y: 20, width: 600, height: 800 }
+  eq(round(displayRectToPdfBox(box, 90, { left: 0, top: 0, width: 0.5, height: 1 })), [10, 20, 600, 400], 'box')
+})
+
+await check('displayToPdf agrees with pdf.js for every rotation and an offset crop box', async () => {
+  for (const angle of [0, 90, 180, 270] as const) {
+    const doc = await PDFDocument.load(await rotatePages(B, [0], angle === 0 ? 90 : angle))
+    const page = doc.getPage(0)
+    if (angle === 0) page.setRotation(degrees(0))
+    page.setCropBox(50, 80, 400, 600)
+    const bytes = await doc.save()
+    const js = await pdfjs.getDocument({ data: bytes.slice(), verbosity: 0 }).promise
+    try {
+      const vp = (await js.getPage(1)).getViewport({ scale: 1 })
+      for (const [u, v] of [[0, 0], [1, 0], [0.25, 0.75], [1, 1]]) {
+        const [x, y] = vp.convertToPdfPoint(u * vp.width, v * vp.height)
+        const ours = displayToPdf(visibleBox(page), page.getRotation().angle, u, v)
+        eq([Math.round(ours.x), Math.round(ours.y)], [Math.round(x), Math.round(y)], `rot ${angle} at (${u}, ${v})`)
+      }
+    } finally {
+      await js.destroy()
+    }
+  }
+})
+
+await check('crop all pages to the left half', async () => {
+  const out = await cropPdf(A, { rect: { left: 0, top: 0, width: 0.5, height: 1 } })
+  const doc = await PDFDocument.load(out)
+  const src = await PDFDocument.load(A)
+  doc.getPages().forEach((p, i) => {
+    const before = src.getPage(i).getSize()
+    eq(Math.round(p.getCropBox().width), Math.round(before.width / 2), `page ${i + 1} crop width`)
+    eq(Math.round(p.getMediaBox().height), Math.round(before.height), `page ${i + 1} media height`)
+  })
+})
+
+await check('crop respects page rotation and page selection', async () => {
+  const rotated = await rotatePages(A, [1], 90)
+  const out = await cropPdf(rotated, { rect: { left: 0, top: 0, width: 0.5, height: 1 }, pageIndices: [1] })
+  const doc = await PDFDocument.load(out)
+  const src = (await PDFDocument.load(A)).getPage(1).getSize()
+  const crop = doc.getPage(1).getCropBox()
+  eq([Math.round(crop.width), Math.round(crop.height)], [Math.round(src.width), Math.round(src.height / 2)], 'rotated crop')
+  eq(Math.round(doc.getPage(0).getCropBox().width), Math.round(src.width), 'page 1 untouched')
+})
+
+await check('crop rejects a tiny area', async () => {
+  await throwsWith(() => cropPdf(A, { rect: { left: 0, top: 0, width: 0.001, height: 0.5 } }), 'too small')
+})
+
+await check('uprightPlacement turns stamps with the page', async () => {
+  const doc = await PDFDocument.load(await rotatePages(B, [0], 90))
+  const r = { left: 0.1, top: 0.1, width: 0.2, height: 0.1 }
+  eq(Math.round(uprightPlacement(doc.getPage(0), r).rotate.angle), 90, 'rotated page')
+  eq(Math.round(uprightPlacement(doc.getPage(1), r).rotate.angle), 0, 'upright page')
+})
+
+await check('stamp the same PNG on 3 pages embeds it once', async () => {
+  const rect = { left: 0.6, top: 0.8, width: 0.25, height: 0.08 }
+  const out = await stampImages(B, [0, 1, 2].map((pageIndex) => ({ pageIndex, rect, png: PNG })))
+  eq(await pages(out), 3, 'page count')
+  const imageObjects = async (bytes: Uint8Array) =>
+    (await PDFDocument.load(bytes)).context
+      .enumerateIndirectObjects()
+      .filter(([, o]) => o.toString().includes('/Subtype /Image')).length
+  const once = await stampImages(B, [{ pageIndex: 0, rect, png: PNG }])
+  eq(await imageObjects(out), await imageObjects(once), 'image objects (image + alpha mask, not ×3)')
+})
+
+await check('stamp with nothing placed throws', async () => {
+  await throwsWith(() => stampImages(B, []), 'Place at least one')
+})
+
+// --- password protection, cross-checked against pdf.js (what browsers use) and qpdf (reference encryptor)
+
+async function pdfjsRead(bytes: Uint8Array, password?: string): Promise<{ pages: number; text: string }> {
+  const doc = await pdfjs.getDocument({ data: bytes.slice(), password, verbosity: 0 }).promise
+  try {
+    const content = await (await doc.getPage(1)).getTextContent()
+    const text = content.items.map((i) => ('str' in i ? i.str : '')).join('')
+    return { pages: doc.numPages, text }
+  } finally {
+    await doc.destroy()
+  }
+}
+
+/** Encrypt with qpdf. `user` may be '' for a restrictions-only file. */
+async function qpdfEncrypt(bytes: Uint8Array, user: string, owner: string, cipher: string[]): Promise<Uint8Array> {
+  const q = await loadQpdf()
+  q.FS.writeFile('/in.pdf', bytes)
+  const weak = cipher.includes('--allow-weak-crypto') ? ['--allow-weak-crypto'] : []
+  const opts = cipher.filter((c) => c !== '--allow-weak-crypto')
+  const args = [...weak, '--encrypt', `--user-password=${user}`, `--owner-password=${owner}`, ...opts, '--', '/in.pdf', '/out.pdf']
+  const code = q.callMain(args)
+  if (code !== 0) throw new Error(`qpdf --encrypt exited ${code}`)
+  return q.FS.readFile('/out.pdf').slice()
+}
+
+const ORIGINAL_TEXT = (await pdfjsRead(A)).text
+
+await check('protect: pdf.js needs the password, then reads every page', async () => {
+  const locked = await protectPdf(A, { password: 'pässwörd 1', allowPrint: true, allowCopy: true, allowEdit: true })
+  let needsPassword = false
+  try {
+    await pdfjsRead(locked)
+  } catch (e) {
+    needsPassword = (e as { name?: string }).name === 'PasswordException'
+  }
+  if (!needsPassword) throw new Error('pdf.js opened the file without a password')
+  const read = await pdfjsRead(locked, 'pässwörd 1')
+  eq(read.pages, 5, 'pages')
+  eq(read.text, ORIGINAL_TEXT, 'page 1 text')
+  eq(await inspectLock(locked), 'password', 'lock state')
+})
+
+await check('protect: qpdf decrypts our output with the password', async () => {
+  const locked = await protectPdf(B, { password: 'pw', allowPrint: false, allowCopy: false, allowEdit: false })
+  const q = await loadQpdf()
+  q.FS.writeFile('/in.pdf', locked)
+  eq(q.callMain(['--password=pw', '--decrypt', '/in.pdf', '/out.pdf']), 0, 'qpdf exit code')
+  eq(await pages(q.FS.readFile('/out.pdf').slice()), 3, 'decrypted pages')
+})
+
+await check('protect refuses an already-protected PDF', async () => {
+  const locked = await protectPdf(B, { password: 'pw', allowPrint: true, allowCopy: true, allowEdit: true })
+  await throwsWith(
+    () => protectPdf(locked, { password: 'x', allowPrint: true, allowCopy: true, allowEdit: true }),
+    'already password-protected',
+  )
+})
+
+for (const [label, cipher] of [
+  ['AES-256', ['--bits=256']],
+  ['AES-128', ['--bits=128', '--use-aes=y']],
+  ['RC4-128', ['--bits=128', '--use-aes=n', '--allow-weak-crypto']],
+] as const) {
+  await check(`unlock a qpdf ${label} file: wrong password refused, right one decrypts`, async () => {
+    const locked = await qpdfEncrypt(A, 'open sesame', 'owner-pw', [...cipher])
+    eq(await inspectLock(locked), 'password', 'lock state')
+    await throwsWith(() => unlockPdf(locked, 'nope'), 'Wrong password')
+    const opened = await unlockPdf(locked, 'open sesame')
+    eq(await inspectLock(opened), 'none', 'state after unlock')
+    eq(await pages(opened), 5, 'pages via pdf-lib')
+    eq((await pdfjsRead(opened)).text, ORIGINAL_TEXT, 'page 1 text via pdf.js')
+  })
+}
+
+await check('unlock a restrictions-only file without a password', async () => {
+  const restricted = await qpdfEncrypt(B, '', 'owner-pw', ['--bits=256', '--print=none', '--extract=n'])
+  eq(await inspectLock(restricted), 'restrictions-only', 'lock state')
+  const opened = await unlockPdf(restricted, '')
+  eq(await inspectLock(opened), 'none', 'state after unlock')
+  eq(await pages(opened), 3, 'pages')
+})
+
+await check('unlock: a plain PDF has nothing to unlock; junk is rejected', async () => {
+  eq(await inspectLock(B), 'none', 'plain')
+  await throwsWith(() => unlockPdf(B, 'x'), "isn't password-protected")
+  await throwsWith(() => inspectLock(new TextEncoder().encode('not a pdf at all')), 'valid PDF')
 })
 
 console.log(`\n${pass} passed, ${failures.length} failed`)

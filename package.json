@@ -5,26 +5,37 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "predev": "node scripts/copy-ocr-assets.mjs",
     "build": "tsc --noEmit && vite build && node scripts/spa-fallback.mjs",
+    "prebuild": "node scripts/copy-ocr-assets.mjs",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "fixtures": "tsx scripts/make-fixtures.ts public/fixtures",
     "test:engines": "tsx scripts/test-engines.ts public/fixtures"
   },
   "dependencies": {
+    "@cantoo/pdf-lib": "^2.11.1",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@fontsource/caveat": "^5.3.0",
+    "@fontsource/dancing-script": "^5.3.0",
+    "@fontsource/great-vibes": "^5.3.0",
     "fflate": "^0.8.2",
+    "html-entities": "^2.6.0",
     "lucide-react": "^0.469.0",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^5.3.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-router-dom": "^7.6.0"
+    "react-router-dom": "^7.6.0",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
+    "@neslinesli93/qpdf-wasm": "^0.3.0",
     "@tailwindcss/vite": "^4.1.0",
+    "@tesseract.js-data/eng": "^1.0.0",
+    "@tesseract.js-data/hin": "^1.0.0",
     "@types/node": "^22.15.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",

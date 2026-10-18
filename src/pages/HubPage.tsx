@@ -4,7 +4,7 @@ import { CATEGORY_LABEL, TOOLS, type ToolCategory } from '../toolRegistry'
 import { ToolIcon } from '../components/ToolIcon'
 import { usePageMeta } from '../hooks/usePageMeta'
 
-const CATEGORIES: ToolCategory[] = ['organize', 'optimize', 'convert', 'edit']
+const CATEGORIES: ToolCategory[] = ['organize', 'optimize', 'convert', 'edit', 'security']
 
 const FAQ: { q: string; a: string }[] = [
   {
@@ -21,7 +21,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: 'Can it handle password-protected PDFs?',
-    a: 'Not yet — Protect and Unlock tools are on the roadmap, along with Sign, OCR (English + Hindi), Scan to PDF, and Crop.',
+    a: 'Yes. Protect PDF adds a password with AES-256 encryption, and Unlock PDF removes the password from a file you can already open. PDFCraft never cracks passwords — you need to know it.',
   },
 ]
 

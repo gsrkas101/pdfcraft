@@ -35,7 +35,7 @@ export default function Layout() {
     window.scrollTo(0, 0)
   }, [pathname])
 
-  const categories: ToolCategory[] = ['organize', 'optimize', 'convert', 'edit']
+  const categories: ToolCategory[] = ['organize', 'optimize', 'convert', 'edit', 'security']
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -55,8 +55,8 @@ export default function Layout() {
       </main>
 
       <footer className="mt-16 border-t border-slate-200 bg-white">
-        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:grid-cols-2 lg:grid-cols-5">
-          <div className="lg:col-span-2">
+        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:grid-cols-3 lg:grid-cols-7">
+          <div className="sm:col-span-3 lg:col-span-2">
             <Logo />
             <p className="mt-3 max-w-xs text-sm text-slate-500">
               Every tool runs entirely in your browser. Your files never leave your device — there is no server to

@@ -1,5 +1,11 @@
 import {
   Combine,
+  Crop,
+  FileLock2,
+  FileScan,
+  LockOpen,
+  ScanText,
+  Signature,
   FileImage,
   FileMinus,
   FileOutput,
@@ -26,6 +32,12 @@ const ICONS: Record<string, LucideIcon> = {
   'pdf-to-jpg': Images,
   watermark: Stamp,
   'page-numbers': Hash,
+  sign: Signature,
+  crop: Crop,
+  scan: FileScan,
+  ocr: ScanText,
+  protect: FileLock2,
+  unlock: LockOpen,
 }
 
 const CAT_BG: Record<ToolCategory, string> = {
@@ -33,6 +45,7 @@ const CAT_BG: Record<ToolCategory, string> = {
   optimize: 'bg-amber-500',
   convert: 'bg-sky-600',
   edit: 'bg-violet-600',
+  security: 'bg-rose-600',
 }
 
 export function ToolIcon({ tool, size = 'md' }: { tool: ToolMeta; size?: 'md' | 'lg' }) {

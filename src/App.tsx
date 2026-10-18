@@ -16,6 +16,12 @@ const JpgToPdfTool = lazy(() => import('./tools/JpgToPdfTool'))
 const PdfToJpgTool = lazy(() => import('./tools/PdfToJpgTool'))
 const WatermarkTool = lazy(() => import('./tools/WatermarkTool'))
 const PageNumbersTool = lazy(() => import('./tools/PageNumbersTool'))
+const SignTool = lazy(() => import('./tools/SignTool'))
+const CropTool = lazy(() => import('./tools/CropTool'))
+const ScanTool = lazy(() => import('./tools/ScanTool'))
+const OcrTool = lazy(() => import('./tools/OcrTool'))
+const ProtectTool = lazy(() => import('./tools/ProtectTool'))
+const UnlockTool = lazy(() => import('./tools/UnlockTool'))
 
 export default function App() {
   return (
@@ -33,6 +39,12 @@ export default function App() {
         <Route path="pdf-to-jpg" element={<PdfToJpgTool />} />
         <Route path="add-watermark" element={<WatermarkTool />} />
         <Route path="add-page-numbers" element={<PageNumbersTool />} />
+        <Route path="sign-pdf" element={<SignTool />} />
+        <Route path="crop-pdf" element={<CropTool />} />
+        <Route path="scan-to-pdf" element={<ScanTool />} />
+        <Route path="ocr-pdf" element={<OcrTool />} />
+        <Route path="protect-pdf" element={<ProtectTool />} />
+        <Route path="unlock-pdf" element={<UnlockTool />} />
         <Route path="privacy" element={<PrivacyPage />} />
         <Route path="*" element={<NotFound />} />
       </Route>

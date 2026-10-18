@@ -33,7 +33,7 @@ export function usePdfDoc(file: File | null): PdfState {
         const name = (e as { name?: string } | null)?.name
         const msg =
           name === 'PasswordException'
-            ? 'This PDF is password-protected. Remove the password first — an Unlock tool is coming to PDFCraft soon.'
+            ? 'This PDF is password-protected. Remove the password first with the Unlock PDF tool, then try again.'
             : "This file doesn't look like a valid PDF, or it may be corrupted."
         if (!dead) setState({ doc: null, bytes: null, error: msg, loading: false })
       }
