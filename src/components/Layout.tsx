@@ -29,7 +29,11 @@ function Logo() {
 
 export default function Layout() {
   const { pathname } = useLocation()
-  useEffect(() => window.scrollTo(0, 0), [pathname])
+  // Braces matter: newer Chrome returns a Promise from scrollTo, which React
+  // would treat as a cleanup function and crash on the next navigation.
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
 
   const categories: ToolCategory[] = ['organize', 'optimize', 'convert', 'edit']
 
